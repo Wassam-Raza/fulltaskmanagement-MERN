@@ -15,13 +15,16 @@ app.use(express.json());
 
 // Serverless MongoDB Connection Middleware
 let isConnected = false;
+let lastDbError = null;
 const connectDB = async () => {
   if (isConnected) return;
   try {
     const db = await mongoose.connect(process.env.MONGO_URI);
     isConnected = db.connections[0].readyState;
+    lastDbError = null;
     console.log('MongoDB connected');
   } catch (error) {
+    lastDbError = error.message;
     console.error('MongoDB connection error:', error);
   }
 };
@@ -53,7 +56,8 @@ app.get('/api/test-db', (req, res) => {
       status: 'success',
       readyState,
       connectionStatus: statusMap[readyState] || 'Unknown',
-      host: mongoose.connection.host || 'None'
+      host: mongoose.connection.host || 'None',
+      error: lastDbError
     });
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
